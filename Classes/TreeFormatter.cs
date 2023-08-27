@@ -59,7 +59,7 @@ namespace Lr1.Classes
             var builder = new StringBuilder((nesting.Length + 3) * chain.Elements.Count);
 
             _nestingLevelHasLinks[NestingLevel] = true;
-            for (int i = 0; i < chain.Elements.Count; i++)
+            for (int i = 0; i < chain.Elements.Count - 1; i++)
                 builder.AppendLine(nesting + "├─" + ToString(chain.Elements[i]));
             _nestingLevelHasLinks[NestingLevel] = false;
 
