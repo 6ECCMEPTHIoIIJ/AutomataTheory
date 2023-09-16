@@ -3,8 +3,6 @@ using Lr1.Core.Factories;
 using Lr1.Core.Interfaces;
 using Lr1.Interfaces;
 
-using System.Data;
-
 namespace Lr1.Classes
 {
     internal class UserExecutor : IExecutor
@@ -104,7 +102,8 @@ namespace Lr1.Classes
         private void GetMainChain()
         {
             Console.Write("Начальная цепочка: ");
-            _mainChain = _chainFactory.GetChain(Utility.ReadString());
+            _mainChain = _chainFactory.GetChain(new List<IChainElement> { _chainElementFactory.GetChainElement(_rules[0].Origin) });
+            Console.WriteLine(_simpleFormatter.ToString(_mainChain));
         }
 
         private void GetDeductionType()
@@ -127,26 +126,57 @@ namespace Lr1.Classes
                 : "Cмешанный");
         }
 
+        private void GetSubDeductionType()
+        {
+            Console.WriteLine("Способы вывода:\n.1 Левый\n.2 Правый");
+
+            do
+            {
+                Console.Write("Вывод: ");
+                _deductionType = Utility.ReadInt();
+                if (_deductionType < 1 || _deductionType > 2)
+                    Utility.WriteError($"[ОШИБКА]: Неизвестный способ вывода \'{_deductionType}\'. Способ вывода должен находиться в диапазоне [1..2].");
+            }
+            while (_deductionType < 1 || _deductionType > 2);
+
+            Console.WriteLine(_deductionType == 1
+                ? "Левый"
+                : "Правый");
+        }
+
         private void GetLeftRule()
         {
+            Console.WriteLine($"Шаг {_stepCount}.");
+            _stepCount++;
+            Console.WriteLine($"Промежуточная цепочка: {_simpleFormatter.ToString(_mainChain)}");
+
             GetRule(true, false);
         }
 
         private void GetRightRule()
         {
+            Console.WriteLine($"Шаг {_stepCount}.");
+            _stepCount++;
+            Console.WriteLine($"Промежуточная цепочка: {_simpleFormatter.ToString(_mainChain)}");
+
             GetRule(false, true);
         }
 
         private void GetBothRules()
         {
-            GetRule(true, true);
+            Console.WriteLine($"Шаг {_stepCount}.");
+            _stepCount++;
+            Console.WriteLine($"Промежуточная цепочка: {_simpleFormatter.ToString(_mainChain)}");
+
+            GetSubDeductionType();
+            if (_deductionType == 1)
+                GetRule(true, false);
+            else
+                GetRule(false, true);
         }
 
         private void GetRule(bool isLeft, bool isRight)
         {
-            Console.WriteLine($"Шаг {_stepCount}.");
-            _stepCount++;
-            Console.WriteLine($"Промежуточная цепочка: {_simpleFormatter.ToString(_mainChain)}");
             Console.WriteLine("Доступные правила: ");
 
             IChainNonTerminalElement? leftNonTerminal = isLeft ? _mainChain.LeftNonTerminal : null;
@@ -189,7 +219,7 @@ namespace Lr1.Classes
                     isRightRule = HasRule(rightNonTerminal, ruleIndex);
                     if (!isLeftRule && !isRightRule)
                         Utility.WriteError($"[ОШИБКА]: Нетерминал \'{(isLeftRule ? rightNonTerminal : leftNonTerminal)}\' не содержит правила #{ruleIndex}");
-                } 
+                }
                 while (!isLeftRule && !isRightRule);
 
                 return ruleIndex;
