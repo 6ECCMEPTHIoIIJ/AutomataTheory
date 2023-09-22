@@ -10,6 +10,7 @@ namespace Lr1.Classes
         private readonly SimpleFormatter _simpleFormatter = new();
         private readonly TreeFormatter _treeFormatter = new();
         private readonly LbfTreeFormatter _lbfTreeFormatter = new();
+        private readonly LatexFormatter _latexFormatter = new();
 
         private readonly TerminalFactory _terminalFactory;
         private readonly NonTerminalFactory _nonTerminalFactory;
@@ -242,6 +243,7 @@ namespace Lr1.Classes
             Console.WriteLine($"Последовательность правил: {string.Join("->", _rulesIndeces)}");
             Console.WriteLine($"ЛСФ ДВ: {_lbfTreeFormatter.ToString(_mainChain)}");
             Console.WriteLine($"Примечание. Дерево вывода имеет вид:\n{_treeFormatter.ToString(_mainChain)}");
+            Console.WriteLine($"LaTeX код:\n\\Tree{_latexFormatter.ToString(_mainChain)}");
         }
     }
 }
