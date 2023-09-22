@@ -8,7 +8,7 @@ internal class Program
     {
         ExecutionChecker checker = new ExecutionChecker();
         UserExecutor executor = new UserExecutor();
-        Console.WriteLine("Выберите режим:\n1. Пользоательский ввод\n2. Автоматическая обработка");
+        Console.WriteLine("Выберите режим:\n1. Пользовательский ввод\n2. Автоматическая обработка");
         int input;
         do {
 

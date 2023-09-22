@@ -19,8 +19,6 @@ namespace Lr1.Core.Factories
 
         public IChain GetChain(IEnumerable<IChainElement> elements)
         {
-            if (!elements.Any()) throw new ArgumentException("Elements array must be not empty.");
-
             return new Chain(elements);
         }
     }

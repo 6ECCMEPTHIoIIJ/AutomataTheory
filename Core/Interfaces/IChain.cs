@@ -5,4 +5,5 @@ internal interface IChain : IChainElement
     IReadOnlyList<IChainElement> Elements { get; }
     IChainNonTerminalElement? LeftNonTerminal { get; }
     IChainNonTerminalElement? RightNonTerminal { get; }
+    IList<IChainNonTerminalElement> NonTerminals { get; }
 }

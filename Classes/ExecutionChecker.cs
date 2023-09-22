@@ -3,6 +3,8 @@ using Lr1.Core.Factories;
 using Lr1.Core.Interfaces;
 using Lr1.Interfaces;
 
+using System.Collections.Generic;
+
 namespace Lr1.Classes
 {
     internal class ExecutionChecker : IExecutor
@@ -28,13 +30,7 @@ namespace Lr1.Classes
         private IChain _mainChain = new Chain(Array.Empty<IChainElement>());
         private int _deductionType;
         private int _stepCount = 1;
-        private List<List<int>> _appliedRulesIndeces = new()
-        {
-            new (){1, 1, 3, 4, 6, 3, 5, 7, 8, 6, 2, 3, 6},
-            new (){1, 1, 2, 3, 3, 3, 4, 5, 6, 6, 7, 8, 6},
-            new (){1, 3, 3, 5, 7, 4, 6, 8, 6, 2, 3, 6, 6},
-            new (){1, 2, 3, 6, 1, 3, 5, 7, 8, 6, 3, 4, 6},
-        };
+        private List<List<int>> _appliedRulesIndeces = new();
 
         public ExecutionChecker()
         {
@@ -49,11 +45,13 @@ namespace Lr1.Classes
         public void Run()
         {
             GetGrammatic();
+            GetRulesSequence();
             GetDeductionType();
+
 
             foreach (var ruleIndeces in _appliedRulesIndeces)
             {
-                _stepCount = 0;
+                _stepCount = 1;
                 GetMainChain();
                 try
                 {
@@ -66,10 +64,16 @@ namespace Lr1.Classes
 
                     if (_mainChain.IsTerminal)
                         WriteResult();
+                    else
+                    {
+                        Console.WriteLine(_simpleFormatter.ToString(_mainChain));
+                        Utility.WriteError("[ОШИБКА]: Применение последовательности правил не приводит к получению терминальной цепочки.");
+                    }
+
                 }
                 catch (WrongRuleException)
                 {
-                    Utility.WriteError("Невозможно применить последовательность правил");
+                    Utility.WriteError("[ОШИБКА]: Невозможно применить последовательность правил.");
                 }
             }
         }
@@ -143,6 +147,47 @@ namespace Lr1.Classes
                 : "Cмешанный");
         }
 
+        private void GetRulesSequence()
+        {
+            Console.Write("Число последовательностей для проверки: ");
+            int rulesListsCount = Utility.ReadInt();
+
+            while (rulesListsCount <= 0)
+            {
+                Utility.WriteError($"[ОШИБКА]: Недопустимое число \'{rulesListsCount}\' последовательностей для проверки. Число должно быть > 0.");
+                rulesListsCount = Utility.ReadInt();
+            }
+
+
+            for (int i = 0; i < rulesListsCount; i++)
+            {
+                Console.Write($"Число правил в {i + 1}-й последовательности: ");
+                int rulesCount = Utility.ReadInt();
+
+                while (rulesCount <= 0)
+                {
+                    Utility.WriteError($"[ОШИБКА]: Недопустимое число \'{rulesCount}\' правил в {i + 1}-й последовательности. Число должно быть > 0.");
+                    rulesListsCount = Utility.ReadInt();
+                }
+
+                _appliedRulesIndeces.Add(new List<int>(rulesCount));
+
+                Console.Write($"{i + 1}-я последовательность: ");
+                for (int j = 0; j < rulesCount; j++)
+                {
+                    int ruleIndex = Utility.ReadInt();
+                    while (_rules.Count < ruleIndex || ruleIndex <= 0)
+                    {
+                        Utility.WriteError($"[ОШИБКА]: Недопустимый индекс \'{ruleIndex}\' правила. Индекс должен находиться в диапазоне [1..{_rules.Count}].");
+                        ruleIndex = Utility.ReadInt();
+                    }
+
+                    _appliedRulesIndeces[i].Add(ruleIndex);
+                }
+
+            }
+        }
+
         private void GetLeftRule(IList<int> ruleIndeces)
         {
             GetRule(true, false, ruleIndeces);
@@ -155,7 +200,60 @@ namespace Lr1.Classes
 
         private void GetBothRules(IList<int> ruleIndeces)
         {
-            GetRule(true, true, ruleIndeces);
+            GetRule(ruleIndeces);
+        }
+
+        private void GetRule(IList<int> ruleIndeces)
+        {
+            foreach (var rule in ruleIndeces)
+            {
+                Console.WriteLine($"Шаг {_stepCount}.");
+                _stepCount++;
+                Console.WriteLine($"Промежуточная цепочка: {_simpleFormatter.ToString(_mainChain)}");
+                Console.WriteLine("Доступные правила: ");
+
+                IList<IChainNonTerminalElement> chainNonTerminalElements = _mainChain.NonTerminals;
+                if ( chainNonTerminalElements.Count == 0)
+                {
+                    Utility.WriteError($"[ОШИБКА]: Цепочка не содержит нетерминалов.");
+                    throw new WrongRuleException();
+                }
+
+                var actualRules = new HashSet<int>();
+                for (int i = 0; i < _rules.Count; i++)
+                    if (chainNonTerminalElements.Any(nonTerminal => HasRule(nonTerminal, i + 1))) 
+                        actualRules.Add(i + 1);
+
+                foreach (var i in actualRules)
+                    Console.WriteLine("\t" + _ruleFactory.GetRule(i));
+
+                int ruleIndex = GetRuleIndex();
+                _rulesIndeces.Add(ruleIndex);
+
+                _ruleFactory.GetRule(ruleIndex).Apply(_mainChain);
+
+                bool HasRule(IChainNonTerminalElement? nonTerminalElement, int ruleIndex)
+                {
+                    return nonTerminalElement != null && nonTerminalElement.NonTerminal.Rules.ContainsKey(ruleIndex);
+                }
+
+                int GetRuleIndex()
+                {
+                    int ruleIndex = rule;
+                    bool hasRule;
+
+                    Console.WriteLine($"Применим правило: {ruleIndex}");
+
+                    hasRule = chainNonTerminalElements.Any(nonTerminal => HasRule(nonTerminal, ruleIndex));
+                    if (!hasRule)
+                    {
+                        Utility.WriteError($"[ОШИБКА]: Правило #{ruleIndex} неприменимо ни к одному нетерминалу цепочки.");
+                        throw new WrongRuleException();
+                    }
+
+                    return ruleIndex;
+                }
+            }
         }
 
         private void GetRule(bool isLeft, bool isRight, IList<int> ruleIndeces)
@@ -168,10 +266,19 @@ namespace Lr1.Classes
                 Console.WriteLine("Доступные правила: ");
 
                 IChainNonTerminalElement? leftNonTerminal = isLeft ? _mainChain.LeftNonTerminal : null;
-                if (isLeft && leftNonTerminal == null) return;
+                if (isLeft && leftNonTerminal == null)
+                {
+                    Utility.WriteError($"[ОШИБКА]: Цепочка не содержит нетерминалов.");
+                    throw new WrongRuleException();
+                }
+
 
                 IChainNonTerminalElement? rightNonTerminal = isRight ? _mainChain.RightNonTerminal : null;
-                if (isRight && rightNonTerminal == null) return;
+                if (isRight && rightNonTerminal == null)
+                {
+                    Utility.WriteError($"[ОШИБКА]: Цепочка не содержит нетерминалов.");
+                    throw new WrongRuleException();
+                }
 
                 for (int i = 0; i < _rules.Count; i++)
                     if (isLeft && HasRule(leftNonTerminal, i + 1))
@@ -206,7 +313,7 @@ namespace Lr1.Classes
                     isRightRule = HasRule(rightNonTerminal, ruleIndex);
                     if (!isLeftRule && !isRightRule)
                     {
-                        Utility.WriteError($"[ОШИБКА]: Нетерминал \'{(isLeftRule ? rightNonTerminal : leftNonTerminal)}\' не содержит правила #{ruleIndex}");
+                        Utility.WriteError($"[ОШИБКА]: Правило #{ruleIndex} неприменимо к нетерминалу \'{(isLeftRule ? rightNonTerminal : leftNonTerminal)}\'.");
                         throw new WrongRuleException();
                     }
 

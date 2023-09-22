@@ -33,7 +33,13 @@ internal class Rule : IRule
 
     public bool Apply(IChain chain)
     {
-        return ApplyLeft(chain) || ApplyRight(chain);
+        var nonTerminal = ((List<IChainNonTerminalElement>)chain.NonTerminals).Find(nonTerminal => nonTerminal.NonTerminal.Letter == _origin.Letter);
+        if (nonTerminal == null
+            || OriginLetter != nonTerminal.NonTerminal.Letter)
+            return false;
+
+        nonTerminal.Child = Target;
+        return true;
     }
 
     private bool Apply(IChain chain, bool isLeft)
