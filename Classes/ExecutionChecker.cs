@@ -50,6 +50,7 @@ namespace Lr1.Classes
 
             foreach (var ruleIndeces in _appliedRulesIndeces)
             {
+                _rulesIndeces.Clear();
                 _stepCount = 1;
                 GetMainChain();
                 try
